@@ -4,7 +4,7 @@ namespace ce;
 
 public class Flight
 {
-    public enum Class {Economy, Business,First}
+    public enum Class {Economy,Business,FirstClass}
     public int FlightID { get; set; }
     public string DepartureCountry { get; set; }
     public string DestinationCountry { get; set; }
@@ -12,7 +12,7 @@ public class Flight
     public string DepartureAirport  { get; set; }
     public string ArrivalAirport {get; set;}
     public Class FlightClass { get; set; }
-    public decimal Price { get; set; }
+    public double Price { get; set; }
 
     public override string ToString()
     {
