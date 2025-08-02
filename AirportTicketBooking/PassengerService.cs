@@ -5,8 +5,17 @@ namespace ce;
 
 public class PassengerService
 {
-    public IEnumerable<Flight> _allFlights;
+    //proparities
+    private IEnumerable<Flight> _allFlights;
     private int _bookingID = 0;
+    public Passenger Passenger{get;set;}
+    
+    //Constructor
+    public PassengerService(Passenger passenger)
+    {
+        Passenger = passenger;
+    }
+    
     /// <summary>
     /// Asynchronously reads flight data from a JSON file and converts it into a List of Flight objects.
     /// </summary>
@@ -62,11 +71,11 @@ public class PassengerService
     /// <param name="parameter"></param>
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
-    public async Task<List<Flight>> SearchFlights(double price, string departureCountry, string destinationCountry,DateTime DepartureDate,string departureAirport , string arrivalAirport,Flight.Class flightClass)
+    public async Task<List<Flight>> SearchFlights(double price, string departureCountry, string destinationCountry,DateTime DepartureDate,string departureAirport = "QAIA" , string arrivalAirport = "IST",Flight.Class flightClass= Flight.Class.Economy)
     {
         _allFlights = await LoadFlightsFromFileAsync();
         
-        List<Flight> result= _allFlights.Where(f=> f.Price == price && f.DepartureCountry.Equals(departureCountry) && f.DestinationCountry.Equals(destinationCountry)
+        List<Flight> result= _allFlights.Where(f=> f.Price <= price && f.DepartureCountry.Equals(departureCountry) && f.DestinationCountry.Equals(destinationCountry)
         && f.DepartureDate.Equals(DepartureDate) && f.DepartureAirport.Equals(departureAirport) && f.ArrivalAirport.Equals(arrivalAirport) && f.FlightClass.Equals(flightClass)
         ).ToList();
         Console.WriteLine($"Found {result.Count} flights");
@@ -84,6 +93,21 @@ public class PassengerService
         booking.PricePaid = flight.Price;
         //sort in json file
         //TODO
+    }
+
+    public void CancelBooking(Booking booking)
+    {
+        
+    }
+
+    public void ModifyBooking(Booking booking)
+    {
+        
+    }
+
+    public void ViewPersonalBooking(Booking booking)
+    {
+        
     }
    
 }
