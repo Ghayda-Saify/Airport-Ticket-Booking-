@@ -1,0 +1,29 @@
+<changelist name="Uncommitted_changes_before_Checkout_at_8_10_2025_6_53_PM_[Changes]1" date="1754841204486" recycled="true" deleted="true">
+  <option name="PATH" value="$PROJECT_DIR$/.idea/.idea.AirportTicketBooking/.idea/shelf/Uncommitted_changes_before_Checkout_at_8_10_2025_6_53_PM_[Changes]1/shelved.patch" />
+  <option name="DESCRIPTION" value="Uncommitted changes before Checkout at 8/10/2025 6:53 PM [Changes]" />
+  <binary>
+    <option name="BEFORE_PATH" value="AirportTicketBooking/bin/Debug/net9.0/AirportTicketBooking.dll" />
+    <option name="AFTER_PATH" value="AirportTicketBooking/bin/Debug/net9.0/AirportTicketBooking.dll" />
+    <option name="SHELVED_PATH" value="$PROJECT_DIR$/.idea/.idea.AirportTicketBooking/.idea/shelf/Uncommitted_changes_before_Checkout_at_8_10_2025_6_53_PM_[Changes]1/AirportTicketBooking.dll" />
+  </binary>
+  <binary>
+    <option name="BEFORE_PATH" value="AirportTicketBooking/bin/Debug/net9.0/AirportTicketBooking.pdb" />
+    <option name="AFTER_PATH" value="AirportTicketBooking/bin/Debug/net9.0/AirportTicketBooking.pdb" />
+    <option name="SHELVED_PATH" value="$PROJECT_DIR$/.idea/.idea.AirportTicketBooking/.idea/shelf/Uncommitted_changes_before_Checkout_at_8_10_2025_6_53_PM_[Changes]1/AirportTicketBooking.pdb" />
+  </binary>
+  <binary>
+    <option name="BEFORE_PATH" value="AirportTicketBooking/bin/Debug/net9.0/AirportTicketBooking.exe" />
+    <option name="AFTER_PATH" value="AirportTicketBooking/bin/Debug/net9.0/AirportTicketBooking.exe" />
+    <option name="SHELVED_PATH" value="$PROJECT_DIR$/.idea/.idea.AirportTicketBooking/.idea/shelf/Uncommitted_changes_before_Checkout_at_8_10_2025_6_53_PM_[Changes]1/AirportTicketBooking.exe" />
+  </binary>
+  <binary>
+    <option name="BEFORE_PATH" value="AirportTicketBooking/obj/Debug/net9.0/AirportTicketBooking.AssemblyInfoInputs.cache" />
+    <option name="AFTER_PATH" value="AirportTicketBooking/obj/Debug/net9.0/AirportTicketBooking.AssemblyInfoInputs.cache" />
+    <option name="SHELVED_PATH" value="$PROJECT_DIR$/.idea/.idea.AirportTicketBooking/.idea/shelf/Uncommitted_changes_before_Checkout_at_8_10_2025_6_53_PM_[Changes]1/AirportTicketBooking.AssemblyInfoInputs.cache" />
+  </binary>
+  <binary>
+    <option name="BEFORE_PATH" value="AirportTicketBooking/obj/Debug/net9.0/apphost.exe" />
+    <option name="AFTER_PATH" value="AirportTicketBooking/obj/Debug/net9.0/apphost.exe" />
+    <option name="SHELVED_PATH" value="$PROJECT_DIR$/.idea/.idea.AirportTicketBooking/.idea/shelf/Uncommitted_changes_before_Checkout_at_8_10_2025_6_53_PM_[Changes]1/apphost.exe" />
+  </binary>
+</changelist>

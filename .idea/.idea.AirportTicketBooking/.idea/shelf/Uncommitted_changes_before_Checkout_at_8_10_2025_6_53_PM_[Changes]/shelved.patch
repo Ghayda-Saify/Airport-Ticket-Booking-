@@ -1,0 +1,761 @@
+Index: AirportTicketBooking/PassengerService.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>using System.Text.Json;\r\n\r\nnamespace ce;\r\n\r\npublic class PassengerService\r\n{\r\n    #region Properties\r\n    public Passenger Passenger{get;set;}\r\n    public List<Flight> AllFlights{get; set; }\r\n    public List<Booking> AllBookings { get; set; }\r\n    #endregion\r\n\r\n    #region private fields\r\n    \r\n    private readonly FileDataService _dataService;\r\n    private int _bookingId = 0;\r\n    private string _flightFilePath = \"Data/Flights.json\";\r\n    private string _bookingFilePath = \"Data/Booking.json\";\r\n    private JsonSerializerOptions _jsonOptions;\r\n    \r\n    #endregion\r\n\r\n    public PassengerService()\r\n    {\r\n        _dataService = new FileDataService();\r\n    }\r\n    \r\n    #region Load Data Files\r\n    /// <summary>\r\n    /// Asynchronously reads flight data from a JSON file and converts it into a List of Flight objects.\r\n    /// </summary>\r\n    /// <returns>A Task that represents the asynchronous operation. The task result contains a List of Flight objects, or an empty list if the file doesn't exist or is empty.</returns>\r\n    private async Task LoadFlightsAndBookingFromFileAsync()\r\n    {\r\n        AllFlights =await _dataService.Read<Flight>(_flightFilePath);\r\n        AllBookings =await _dataService.Read<Booking>(_bookingFilePath);\r\n\r\n    }\r\n    #endregion\r\n    \r\n    #region Search \r\n    /// <summary>\r\n    /// Searches for available flights based on a flexible set of criteria.\r\n    /// </summary>\r\n    /// <param name=\"price\"></param>\r\n    /// <param name=\"departureCountry\"></param>\r\n    /// <param name=\"destinationCountry\"></param>\r\n    /// <param name=\"DepartureDate\"></param>\r\n    /// <param name=\"departureAirport\"></param>\r\n    /// <param name=\"arrivalAirport\"></param>\r\n    /// <param name=\"flightClass\"></param>\r\n    /// <returns></returns>\r\n    public async Task<List<Flight>> SearchFlights(double price, string departureCountry, string destinationCountry,DateTime DepartureDate,string departureAirport = \"\" , string arrivalAirport = \"\",ClassType flightClass = ClassType.Economy)\r\n    {\r\n        await LoadFlightsAndBookingFromFileAsync();\r\n        \r\n            List<Flight> result = AllFlights.Where(f =>\r\n                (f.Price <= price && f.DepartureCountry.Equals(departureCountry) &&\r\n                 f.DestinationCountry.Equals(destinationCountry)\r\n                 && f.DepartureDate.Equals(DepartureDate) && f.DepartureAirport.Contains(departureAirport) &&\r\n                 f.ArrivalAirport.Contains(arrivalAirport))).ToList() ?? new List<Flight>();\r\n            if (flightClass == ClassType.Business)\r\n            {\r\n                result = result.Where(f => f.BusinessPrice <= price).ToList();\r\n            }\r\n            else if (flightClass == ClassType.FirstClass)\r\n            {\r\n                result = result.Where(f => f.FirstClassPrice <= price).ToList();\r\n            }\r\n\r\n            Console.WriteLine($\"Found {result.Count} flights\");\r\n            return result;\r\n    }\r\n        \r\n    \r\n    #endregion\r\n    \r\n    #region Book a Flight\r\n    /// <summary>\r\n    /// let the user book a flight\r\n    /// </summary>\r\n    /// <param name=\"flight\"></param>\r\n    /// <param name=\"passenger\"></param>\r\n    public async Task BookAFlight(int flightId, ClassType flightClass)\r\n    {\r\n        await LoadFlightsAndBookingFromFileAsync();\r\n        var flight = AllFlights.SingleOrDefault(f => f.FlightID == flightId);\r\n        if (flight == null)\r\n        {\r\n            Console.WriteLine(\"Error: Flight not found\");\r\n            return;\r\n        }\r\n        Booking booking = new Booking();\r\n        Booking lastBooking = AllBookings.OrderBy(b => b.BookingID).Last();\r\n        booking.BookingID = lastBooking.BookingID++;\r\n        booking.FlightId = flight.FlightID;\r\n        booking.PassengerId = Passenger.PassengerId;\r\n        booking.FlightClass = flightClass;\r\n        //store in json file\r\n        AllBookings.Add(booking);\r\n        await _dataService.Write(_bookingFilePath, AllBookings);\r\n\r\n    }\r\n    #endregion\r\n\r\n    #region  Cancel Flight\r\n    /// <summary>\r\n    /// To cancel the booking based on booking id\r\n    /// </summary>\r\n    /// <param name=\"bookingId\"></param>\r\n    public async Task CancelBooking()\r\n    {\r\n        await LoadFlightsAndBookingFromFileAsync();\r\n        Booking booking = AllBookings.SingleOrDefault(b => b.PassengerId == Passenger.PassengerId);\r\n        if (booking == null)\r\n        {\r\n            Console.WriteLine(\"Booking not found. Please make sure your Booking ID is correct.\");\r\n        }\r\n        else\r\n        {\r\n            AllBookings.Remove(booking);\r\n            await _dataService.Write<Booking>(_bookingFilePath, AllBookings);\r\n        }\r\n    }\r\n    #endregion\r\n    \r\n    #region  Modify Booking\r\n   /// <summary>\r\n   /// To Modify Booking\r\n   /// </summary>\r\n   /// <param name=\"flightClass\"></param>\r\n    public async Task ModifyBooking( ClassType flightClass)\r\n    {\r\n        await LoadFlightsAndBookingFromFileAsync();\r\n        Booking booking = AllBookings.SingleOrDefault(b => b.PassengerId == Passenger.PassengerId);\r\n        if (booking == null)\r\n        {\r\n            Console.WriteLine(\"Booking not found. Please make sure your Booking ID is correct.\");\r\n        }\r\n        else\r\n        {\r\n            AllBookings.Remove(booking);\r\n            booking.FlightClass = flightClass;\r\n            AllBookings.Add(booking);\r\n            await _dataService.Write<Booking>(_bookingFilePath, AllBookings);\r\n        }\r\n    }\r\n   #endregion\r\n   \r\n   #region  View Flight's info\r\n    /// <summary>\r\n    /// View the Booking\r\n    /// </summary>\r\n    /// <returns></returns>\r\n    public async Task<List<Booking>> ViewPersonalBooking()\r\n    {\r\n        await LoadFlightsAndBookingFromFileAsync();\r\n        try\r\n        {\r\n            var booking = AllBookings.Where(b => b.PassengerId == Passenger.PassengerId).ToList();\r\n            if (booking == null)\r\n            {\r\n                Console.WriteLine(\"Booking not found. Seems like you don't have booked any fight yet!\");\r\n                return new  List<Booking>();\r\n            }\r\n            else\r\n            {\r\n                return booking;\r\n            }\r\n        }\r\n        catch (Exception e)\r\n        {\r\n            Console.WriteLine(e);\r\n            return new  List<Booking>();\r\n        }\r\n\r\n    }\r\n    #endregion\r\n}
+===================================================================
+diff --git a/AirportTicketBooking/PassengerService.cs b/AirportTicketBooking/PassengerService.cs
+--- a/AirportTicketBooking/PassengerService.cs	(revision 815ebc54af6ca7b8f5851b28e0524d791c177b94)
++++ b/AirportTicketBooking/PassengerService.cs	(date 1754840960892)
+@@ -71,8 +71,6 @@
+             Console.WriteLine($"Found {result.Count} flights");
+             return result;
+     }
+-        
+-    
+     #endregion
+     
+     #region Book a Flight
+Index: AirportTicketBooking/bin/Debug/net9.0/Data/Booking.json
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>[{\"BookingID\":1001,\"FlightId\":101,\"PassengerId\":1,\"FlightClass\":\"Economy\"},{\"BookingID\":1002,\"FlightId\":102,\"PassengerId\":2,\"FlightClass\":\"Business\"},{\"BookingID\":1003,\"FlightId\":103,\"PassengerId\":3,\"FlightClass\":\"FirstClass\"},{\"BookingID\":1004,\"FlightId\":104,\"PassengerId\":4,\"FlightClass\":\"Business\"},{\"BookingID\":1005,\"FlightId\":105,\"PassengerId\":5,\"FlightClass\":\"Economy\"},{\"BookingID\":1006,\"FlightId\":106,\"PassengerId\":6,\"FlightClass\":\"FirstClass\"},{\"BookingID\":1007,\"FlightId\":107,\"PassengerId\":7,\"FlightClass\":\"Economy\"},{\"BookingID\":1008,\"FlightId\":108,\"PassengerId\":8,\"FlightClass\":\"Economy\"},{\"BookingID\":1009,\"FlightId\":109,\"PassengerId\":9,\"FlightClass\":\"Business\"},{\"BookingID\":1010,\"FlightId\":110,\"PassengerId\":10,\"FlightClass\":\"FirstClass\"},{\"BookingID\":1011,\"FlightId\":111,\"PassengerId\":11,\"FlightClass\":\"Economy\"},{\"BookingID\":1012,\"FlightId\":112,\"PassengerId\":12,\"FlightClass\":\"Business\"},{\"BookingID\":1013,\"FlightId\":113,\"PassengerId\":13,\"FlightClass\":\"Economy\"},{\"BookingID\":1014,\"FlightId\":114,\"PassengerId\":14,\"FlightClass\":\"FirstClass\"},{\"BookingID\":1015,\"FlightId\":115,\"PassengerId\":15,\"FlightClass\":\"Business\"},{\"BookingID\":0,\"FlightId\":105,\"PassengerId\":4,\"FlightClass\":\"Economy\"},{\"BookingID\":0,\"FlightId\":116,\"PassengerId\":4,\"FlightClass\":\"FirstClass\"}]
+===================================================================
+diff --git a/AirportTicketBooking/bin/Debug/net9.0/Data/Booking.json b/AirportTicketBooking/bin/Debug/net9.0/Data/Booking.json
+--- a/AirportTicketBooking/bin/Debug/net9.0/Data/Booking.json	(revision 815ebc54af6ca7b8f5851b28e0524d791c177b94)
++++ b/AirportTicketBooking/bin/Debug/net9.0/Data/Booking.json	(date 1754840081159)
+@@ -1,1 +1,110 @@
+-[{"BookingID":1001,"FlightId":101,"PassengerId":1,"FlightClass":"Economy"},{"BookingID":1002,"FlightId":102,"PassengerId":2,"FlightClass":"Business"},{"BookingID":1003,"FlightId":103,"PassengerId":3,"FlightClass":"FirstClass"},{"BookingID":1004,"FlightId":104,"PassengerId":4,"FlightClass":"Business"},{"BookingID":1005,"FlightId":105,"PassengerId":5,"FlightClass":"Economy"},{"BookingID":1006,"FlightId":106,"PassengerId":6,"FlightClass":"FirstClass"},{"BookingID":1007,"FlightId":107,"PassengerId":7,"FlightClass":"Economy"},{"BookingID":1008,"FlightId":108,"PassengerId":8,"FlightClass":"Economy"},{"BookingID":1009,"FlightId":109,"PassengerId":9,"FlightClass":"Business"},{"BookingID":1010,"FlightId":110,"PassengerId":10,"FlightClass":"FirstClass"},{"BookingID":1011,"FlightId":111,"PassengerId":11,"FlightClass":"Economy"},{"BookingID":1012,"FlightId":112,"PassengerId":12,"FlightClass":"Business"},{"BookingID":1013,"FlightId":113,"PassengerId":13,"FlightClass":"Economy"},{"BookingID":1014,"FlightId":114,"PassengerId":14,"FlightClass":"FirstClass"},{"BookingID":1015,"FlightId":115,"PassengerId":15,"FlightClass":"Business"},{"BookingID":0,"FlightId":105,"PassengerId":4,"FlightClass":"Economy"},{"BookingID":0,"FlightId":116,"PassengerId":4,"FlightClass":"FirstClass"}]
+\ No newline at end of file
++[
++    {
++        "BookingID": 1001,
++        "FlightId": 101,
++        "PassengerId": 1,
++        "FlightClass": "Economy"
++    },
++    {
++        "BookingID": 1002,
++        "FlightId": 102,
++        "PassengerId": 2,
++        "FlightClass": "Business"
++    },
++    {
++        "BookingID": 1003,
++        "FlightId": 103,
++        "PassengerId": 3,
++        "FlightClass": "FirstClass"
++    },
++    {
++        "BookingID": 1004,
++        "FlightId": 104,
++        "PassengerId": 4,
++        "FlightClass": "Business"
++    },
++    {
++        "BookingID": 1006,
++        "FlightId": 106,
++        "PassengerId": 6,
++        "FlightClass": "FirstClass"
++    },
++    {
++        "BookingID": 1007,
++        "FlightId": 107,
++        "PassengerId": 7,
++        "FlightClass": "Economy"
++    },
++    {
++        "BookingID": 1008,
++        "FlightId": 108,
++        "PassengerId": 8,
++        "FlightClass": "Economy"
++    },
++    {
++        "BookingID": 1009,
++        "FlightId": 109,
++        "PassengerId": 9,
++        "FlightClass": "Business"
++    },
++    {
++        "BookingID": 1010,
++        "FlightId": 110,
++        "PassengerId": 10,
++        "FlightClass": "FirstClass"
++    },
++    {
++        "BookingID": 1011,
++        "FlightId": 111,
++        "PassengerId": 11,
++        "FlightClass": "Economy"
++    },
++    {
++        "BookingID": 1012,
++        "FlightId": 112,
++        "PassengerId": 12,
++        "FlightClass": "Business"
++    },
++    {
++        "BookingID": 1013,
++        "FlightId": 113,
++        "PassengerId": 13,
++        "FlightClass": "Economy"
++    },
++    {
++        "BookingID": 1014,
++        "FlightId": 114,
++        "PassengerId": 14,
++        "FlightClass": "FirstClass"
++    },
++    {
++        "BookingID": 1017,
++        "FlightId": 115,
++        "PassengerId": 15,
++        "FlightClass": "Business"
++    },
++    {
++        "BookingID": 0,
++        "FlightId": 105,
++        "PassengerId": 4,
++        "FlightClass": "Economy"
++    },
++    {
++        "BookingID": 0,
++        "FlightId": 116,
++        "PassengerId": 4,
++        "FlightClass": "FirstClass"
++    },
++    {
++        "BookingID": 1015,
++        "FlightId": 116,
++        "PassengerId": 5,
++        "FlightClass": "FirstClass"
++    },
++    {
++        "BookingID": 1016,
++        "FlightId": 116,
++        "PassengerId": 5,
++        "FlightClass": "Economy"
++    }
++]
+\ No newline at end of file
+Index: AirportTicketBooking/obj/Debug/net9.0/AirportTicketBooking.sourcelink.json
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>{\"documents\":{\"C:\\\\Users\\\\ASUS\\\\RiderProjects\\\\ce\\\\*\":\"https://raw.githubusercontent.com/Ghayda-Saify/Airport-Ticket-Booking-/349a6a6d1caab12e174d9d983e4166ff6a7fee42/*\"}}
+===================================================================
+diff --git a/AirportTicketBooking/obj/Debug/net9.0/AirportTicketBooking.sourcelink.json b/AirportTicketBooking/obj/Debug/net9.0/AirportTicketBooking.sourcelink.json
+--- a/AirportTicketBooking/obj/Debug/net9.0/AirportTicketBooking.sourcelink.json	(revision 815ebc54af6ca7b8f5851b28e0524d791c177b94)
++++ b/AirportTicketBooking/obj/Debug/net9.0/AirportTicketBooking.sourcelink.json	(date 1754836153978)
+@@ -1,1 +1,1 @@
+-{"documents":{"C:\\Users\\ASUS\\RiderProjects\\ce\\*":"https://raw.githubusercontent.com/Ghayda-Saify/Airport-Ticket-Booking-/349a6a6d1caab12e174d9d983e4166ff6a7fee42/*"}}
+\ No newline at end of file
++{"documents":{"C:\\Users\\ASUS\\RiderProjects\\ce\\*":"https://raw.githubusercontent.com/Ghayda-Saify/Airport-Ticket-Booking-/815ebc54af6ca7b8f5851b28e0524d791c177b94/*"}}
+\ No newline at end of file
+Index: AirportTicketBooking/obj/rider.project.model.nuget.info
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>17548085901707298
+===================================================================
+diff --git a/AirportTicketBooking/obj/rider.project.model.nuget.info b/AirportTicketBooking/obj/rider.project.model.nuget.info
+--- a/AirportTicketBooking/obj/rider.project.model.nuget.info	(revision 815ebc54af6ca7b8f5851b28e0524d791c177b94)
++++ b/AirportTicketBooking/obj/rider.project.model.nuget.info	(date 1754840327068)
+@@ -1,1 +1,1 @@
+-17548085901707298
+\ No newline at end of file
++17548361510831005
+\ No newline at end of file
+Index: AirportTicketBooking/obj/rider.project.restore.info
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>17548085901707298
+===================================================================
+diff --git a/AirportTicketBooking/obj/rider.project.restore.info b/AirportTicketBooking/obj/rider.project.restore.info
+--- a/AirportTicketBooking/obj/rider.project.restore.info	(revision 815ebc54af6ca7b8f5851b28e0524d791c177b94)
++++ b/AirportTicketBooking/obj/rider.project.restore.info	(date 1754840327366)
+@@ -1,1 +1,1 @@
+-17548085901707298
+\ No newline at end of file
++17548361510831005
+\ No newline at end of file
+Index: AirportTicketBooking/bin/Debug/net9.0/Data/Flights.json
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>[{\"FlightID\":101,\"DepartureCountry\":\"Palestine\",\"DestinationCountry\":\"Turkey\",\"DepartureDate\":\"2025-09-15T10:30:00\",\"DepartureAirport\":\"QAIA\",\"ArrivalAirport\":\"IST\",\"EconomyPrice\":250,\"BusinessPrice\":550.5,\"FirstClassPrice\":975,\"Price\":250},{\"FlightID\":116,\"DepartureCountry\":\"Palestine\",\"DestinationCountry\":\"Turkey\",\"DepartureDate\":\"2025-09-15T10:30:00\",\"DepartureAirport\":\"CAI\",\"ArrivalAirport\":\"BER\",\"EconomyPrice\":250,\"BusinessPrice\":550.5,\"FirstClassPrice\":975,\"Price\":250},{\"FlightID\":102,\"DepartureCountry\":\"Palestine\",\"DestinationCountry\":\"Egypt\",\"DepartureDate\":\"2025-09-20T14:00:00\",\"DepartureAirport\":\"QAIA\",\"ArrivalAirport\":\"CAI\",\"EconomyPrice\":180,\"BusinessPrice\":400,\"FirstClassPrice\":750,\"Price\":180},{\"FlightID\":103,\"DepartureCountry\":\"Turkey\",\"DestinationCountry\":\"Germany\",\"DepartureDate\":\"2025-10-05T08:45:00\",\"DepartureAirport\":\"IST\",\"ArrivalAirport\":\"BER\",\"EconomyPrice\":320,\"BusinessPrice\":700,\"FirstClassPrice\":1250,\"Price\":320},{\"FlightID\":104,\"DepartureCountry\":\"UAE\",\"DestinationCountry\":\"UK\",\"DepartureDate\":\"2025-10-10T23:00:00\",\"DepartureAirport\":\"DXB\",\"ArrivalAirport\":\"LHR\",\"EconomyPrice\":450,\"BusinessPrice\":1500,\"FirstClassPrice\":3200,\"Price\":450},{\"FlightID\":105,\"DepartureCountry\":\"Palestine\",\"DestinationCountry\":\"UAE\",\"DepartureDate\":\"2025-10-12T18:00:00\",\"DepartureAirport\":\"QAIA\",\"ArrivalAirport\":\"DXB\",\"EconomyPrice\":210,\"BusinessPrice\":500,\"FirstClassPrice\":950,\"Price\":210},{\"FlightID\":106,\"DepartureCountry\":\"Germany\",\"DestinationCountry\":\"Palestine\",\"DepartureDate\":\"2025-10-18T12:15:00\",\"DepartureAirport\":\"BER\",\"ArrivalAirport\":\"QAIA\",\"EconomyPrice\":350,\"BusinessPrice\":750,\"FirstClassPrice\":1300,\"Price\":350},{\"FlightID\":107,\"DepartureCountry\":\"Egypt\",\"DestinationCountry\":\"Saudi Arabia\",\"DepartureDate\":\"2025-11-01T06:00:00\",\"DepartureAirport\":\"CAI\",\"ArrivalAirport\":\"JED\",\"EconomyPrice\":150,\"BusinessPrice\":350,\"FirstClassPrice\":650,\"Price\":150},{\"FlightID\":108,\"DepartureCountry\":\"UK\",\"DestinationCountry\":\"USA\",\"DepartureDate\":\"2025-11-05T11:30:00\",\"DepartureAirport\":\"LHR\",\"ArrivalAirport\":\"JFK\",\"EconomyPrice\":600,\"BusinessPrice\":2200,\"FirstClassPrice\":4500,\"Price\":600},{\"FlightID\":109,\"DepartureCountry\":\"Palestine\",\"DestinationCountry\":\"Qatar\",\"DepartureDate\":\"2025-11-10T20:00:00\",\"DepartureAirport\":\"QAIA\",\"ArrivalAirport\":\"DOH\",\"EconomyPrice\":230,\"BusinessPrice\":520,\"FirstClassPrice\":980,\"Price\":230},{\"FlightID\":110,\"DepartureCountry\":\"USA\",\"DestinationCountry\":\"Canada\",\"DepartureDate\":\"2025-11-15T15:00:00\",\"DepartureAirport\":\"JFK\",\"ArrivalAirport\":\"YYZ\",\"EconomyPrice\":280,\"BusinessPrice\":600,\"FirstClassPrice\":1100,\"Price\":280},{\"FlightID\":111,\"DepartureCountry\":\"France\",\"DestinationCountry\":\"Turkey\",\"DepartureDate\":\"2025-11-22T09:20:00\",\"DepartureAirport\":\"CDG\",\"ArrivalAirport\":\"IST\",\"EconomyPrice\":290,\"BusinessPrice\":650,\"FirstClassPrice\":1150,\"Price\":290},{\"FlightID\":112,\"DepartureCountry\":\"Saudi Arabia\",\"DestinationCountry\":\"Palestine\",\"DepartureDate\":\"2025-12-01T17:00:00\",\"DepartureAirport\":\"JED\",\"ArrivalAirport\":\"QAIA\",\"EconomyPrice\":190,\"BusinessPrice\":420,\"FirstClassPrice\":800,\"Price\":190},{\"FlightID\":113,\"DepartureCountry\":\"Qatar\",\"DestinationCountry\":\"France\",\"DepartureDate\":\"2025-12-10T01:30:00\",\"DepartureAirport\":\"DOH\",\"ArrivalAirport\":\"CDG\",\"EconomyPrice\":550,\"BusinessPrice\":1800,\"FirstClassPrice\":3500,\"Price\":550},{\"FlightID\":114,\"DepartureCountry\":\"Canada\",\"DestinationCountry\":\"UK\",\"DepartureDate\":\"2025-12-15T22:00:00\",\"DepartureAirport\":\"YYZ\",\"ArrivalAirport\":\"LHR\",\"EconomyPrice\":580,\"BusinessPrice\":2100,\"FirstClassPrice\":4300,\"Price\":580},{\"FlightID\":115,\"DepartureCountry\":\"Palestine\",\"DestinationCountry\":\"Italy\",\"DepartureDate\":\"2025-12-20T07:00:00\",\"DepartureAirport\":\"QAIA\",\"ArrivalAirport\":\"FCO\",\"EconomyPrice\":310,\"BusinessPrice\":680,\"FirstClassPrice\":1200,\"Price\":310},{\"FlightID\":101,\"DepartureCountry\":\"USA\",\"DestinationCountry\":\"UK\",\"DepartureDate\":\"2025-09-15T10:30:00\",\"DepartureAirport\":\"JFK\",\"ArrivalAirport\":\"LHR\",\"EconomyPrice\":550,\"BusinessPrice\":1200.5,\"FirstClassPrice\":2500,\"Price\":550},{\"FlightID\":102,\"DepartureCountry\":\"France\",\"DestinationCountry\":\"Japan\",\"DepartureDate\":\"2025-10-20T22:00:00\",\"DepartureAirport\":\"CDG\",\"ArrivalAirport\":\"NRT\",\"EconomyPrice\":820.5,\"BusinessPrice\":1800,\"FirstClassPrice\":3500.75,\"Price\":820.5},{\"FlightID\":103,\"DepartureCountry\":\"Germany\",\"DestinationCountry\":\"USA\",\"DepartureDate\":\"2026-05-01T12:00:00\",\"DepartureAirport\":\"FRA\",\"ArrivalAirport\":\"SFO\",\"EconomyPrice\":600,\"BusinessPrice\":1350,\"FirstClassPrice\":2800,\"Price\":600},{\"FlightID\":104,\"DepartureCountry\":\"UK\",\"DestinationCountry\":\"Canada\",\"DepartureDate\":\"2025-11-05T14:00:00\",\"DepartureAirport\":\"LHR\",\"ArrivalAirport\":\"toronto\",\"EconomyPrice\":400,\"BusinessPrice\":950,\"FirstClassPrice\":1900,\"Price\":400},{\"FlightID\":105,\"DepartureCountry\":\"UAE\",\"DestinationCountry\":\"Australia\",\"DepartureDate\":\"2025-09-25T08:45:00\",\"DepartureAirport\":\"DXB\",\"ArrivalAirport\":\"SYD\",\"EconomyPrice\":950.25,\"BusinessPrice\":2100,\"FirstClassPrice\":4250.5,\"Price\":950.25},{\"FlightID\":101,\"DepartureCountry\":\"USA\",\"DestinationCountry\":\"UK\",\"DepartureDate\":\"2025-09-15T10:30:00\",\"DepartureAirport\":\"JFK\",\"ArrivalAirport\":\"LHR\",\"EconomyPrice\":550,\"BusinessPrice\":1200.5,\"FirstClassPrice\":2500,\"Price\":550},{\"FlightID\":102,\"DepartureCountry\":\"France\",\"DestinationCountry\":\"Japan\",\"DepartureDate\":\"2025-10-20T22:00:00\",\"DepartureAirport\":\"CDG\",\"ArrivalAirport\":\"NRT\",\"EconomyPrice\":820.5,\"BusinessPrice\":1800,\"FirstClassPrice\":3500.75,\"Price\":820.5},{\"FlightID\":103,\"DepartureCountry\":\"Germany\",\"DestinationCountry\":\"USA\",\"DepartureDate\":\"2026-05-01T12:00:00\",\"DepartureAirport\":\"FRA\",\"ArrivalAirport\":\"SFO\",\"EconomyPrice\":600,\"BusinessPrice\":1350,\"FirstClassPrice\":2800,\"Price\":600},{\"FlightID\":104,\"DepartureCountry\":\"UK\",\"DestinationCountry\":\"Canada\",\"DepartureDate\":\"2025-11-05T14:00:00\",\"DepartureAirport\":\"LHR\",\"ArrivalAirport\":\"toronto\",\"EconomyPrice\":400,\"BusinessPrice\":950,\"FirstClassPrice\":1900,\"Price\":400},{\"FlightID\":105,\"DepartureCountry\":\"UAE\",\"DestinationCountry\":\"Australia\",\"DepartureDate\":\"2025-09-25T08:45:00\",\"DepartureAirport\":\"DXB\",\"ArrivalAirport\":\"SYD\",\"EconomyPrice\":950.25,\"BusinessPrice\":2100,\"FirstClassPrice\":4250.5,\"Price\":950.25},{\"FlightID\":101,\"DepartureCountry\":\"USA\",\"DestinationCountry\":\"UK\",\"DepartureDate\":\"2025-09-15T10:30:00\",\"DepartureAirport\":\"JFK\",\"ArrivalAirport\":\"LHR\",\"EconomyPrice\":550,\"BusinessPrice\":1200.5,\"FirstClassPrice\":2500,\"Price\":550},{\"FlightID\":102,\"DepartureCountry\":\"France\",\"DestinationCountry\":\"Japan\",\"DepartureDate\":\"2025-10-20T22:00:00\",\"DepartureAirport\":\"CDG\",\"ArrivalAirport\":\"NRT\",\"EconomyPrice\":820.5,\"BusinessPrice\":1800,\"FirstClassPrice\":3500.75,\"Price\":820.5},{\"FlightID\":103,\"DepartureCountry\":\"Germany\",\"DestinationCountry\":\"USA\",\"DepartureDate\":\"2026-05-01T12:00:00\",\"DepartureAirport\":\"FRA\",\"ArrivalAirport\":\"SFO\",\"EconomyPrice\":600,\"BusinessPrice\":1350,\"FirstClassPrice\":2800,\"Price\":600},{\"FlightID\":104,\"DepartureCountry\":\"UK\",\"DestinationCountry\":\"Canada\",\"DepartureDate\":\"2025-11-05T14:00:00\",\"DepartureAirport\":\"LHR\",\"ArrivalAirport\":\"toronto\",\"EconomyPrice\":400,\"BusinessPrice\":950,\"FirstClassPrice\":1900,\"Price\":400},{\"FlightID\":105,\"DepartureCountry\":\"UAE\",\"DestinationCountry\":\"Australia\",\"DepartureDate\":\"2025-09-25T08:45:00\",\"DepartureAirport\":\"DXB\",\"ArrivalAirport\":\"SYD\",\"EconomyPrice\":950.25,\"BusinessPrice\":2100,\"FirstClassPrice\":4250.5,\"Price\":950.25},{\"FlightID\":101,\"DepartureCountry\":\"USA\",\"DestinationCountry\":\"UK\",\"DepartureDate\":\"2025-09-15T10:30:00\",\"DepartureAirport\":\"JFK\",\"ArrivalAirport\":\"LHR\",\"EconomyPrice\":550,\"BusinessPrice\":1200.5,\"FirstClassPrice\":2500,\"Price\":550},{\"FlightID\":102,\"DepartureCountry\":\"France\",\"DestinationCountry\":\"Japan\",\"DepartureDate\":\"2025-10-20T22:00:00\",\"DepartureAirport\":\"CDG\",\"ArrivalAirport\":\"NRT\",\"EconomyPrice\":820.5,\"BusinessPrice\":1800,\"FirstClassPrice\":3500.75,\"Price\":820.5},{\"FlightID\":103,\"DepartureCountry\":\"Germany\",\"DestinationCountry\":\"USA\",\"DepartureDate\":\"2026-05-01T12:00:00\",\"DepartureAirport\":\"FRA\",\"ArrivalAirport\":\"SFO\",\"EconomyPrice\":600,\"BusinessPrice\":1350,\"FirstClassPrice\":2800,\"Price\":600},{\"FlightID\":104,\"DepartureCountry\":\"UK\",\"DestinationCountry\":\"Canada\",\"DepartureDate\":\"2025-11-05T14:00:00\",\"DepartureAirport\":\"LHR\",\"ArrivalAirport\":\"toronto\",\"EconomyPrice\":400,\"BusinessPrice\":950,\"FirstClassPrice\":1900,\"Price\":400},{\"FlightID\":105,\"DepartureCountry\":\"UAE\",\"DestinationCountry\":\"Australia\",\"DepartureDate\":\"2025-09-25T08:45:00\",\"DepartureAirport\":\"DXB\",\"ArrivalAirport\":\"SYD\",\"EconomyPrice\":950.25,\"BusinessPrice\":2100,\"FirstClassPrice\":4250.5,\"Price\":950.25},{\"FlightID\":101,\"DepartureCountry\":\"USA\",\"DestinationCountry\":\"UK\",\"DepartureDate\":\"2025-09-15T10:30:00\",\"DepartureAirport\":\"JFK\",\"ArrivalAirport\":\"LHR\",\"EconomyPrice\":550,\"BusinessPrice\":1200.5,\"FirstClassPrice\":2500,\"Price\":550},{\"FlightID\":102,\"DepartureCountry\":\"France\",\"DestinationCountry\":\"Japan\",\"DepartureDate\":\"2025-10-20T22:00:00\",\"DepartureAirport\":\"CDG\",\"ArrivalAirport\":\"NRT\",\"EconomyPrice\":820.5,\"BusinessPrice\":1800,\"FirstClassPrice\":3500.75,\"Price\":820.5},{\"FlightID\":103,\"DepartureCountry\":\"Germany\",\"DestinationCountry\":\"USA\",\"DepartureDate\":\"2026-05-01T12:00:00\",\"DepartureAirport\":\"FRA\",\"ArrivalAirport\":\"SFO\",\"EconomyPrice\":600,\"BusinessPrice\":1350,\"FirstClassPrice\":2800,\"Price\":600},{\"FlightID\":104,\"DepartureCountry\":\"UK\",\"DestinationCountry\":\"Canada\",\"DepartureDate\":\"2025-11-05T14:00:00\",\"DepartureAirport\":\"LHR\",\"ArrivalAirport\":\"toronto\",\"EconomyPrice\":400,\"BusinessPrice\":950,\"FirstClassPrice\":1900,\"Price\":400},{\"FlightID\":105,\"DepartureCountry\":\"UAE\",\"DestinationCountry\":\"Australia\",\"DepartureDate\":\"2025-09-25T08:45:00\",\"DepartureAirport\":\"DXB\",\"ArrivalAirport\":\"SYD\",\"EconomyPrice\":950.25,\"BusinessPrice\":2100,\"FirstClassPrice\":4250.5,\"Price\":950.25}]
+===================================================================
+diff --git a/AirportTicketBooking/bin/Debug/net9.0/Data/Flights.json b/AirportTicketBooking/bin/Debug/net9.0/Data/Flights.json
+--- a/AirportTicketBooking/bin/Debug/net9.0/Data/Flights.json	(revision 815ebc54af6ca7b8f5851b28e0524d791c177b94)
++++ b/AirportTicketBooking/bin/Debug/net9.0/Data/Flights.json	(date 1754840587322)
+@@ -1,1 +1,554 @@
+-[{"FlightID":101,"DepartureCountry":"Palestine","DestinationCountry":"Turkey","DepartureDate":"2025-09-15T10:30:00","DepartureAirport":"QAIA","ArrivalAirport":"IST","EconomyPrice":250,"BusinessPrice":550.5,"FirstClassPrice":975,"Price":250},{"FlightID":116,"DepartureCountry":"Palestine","DestinationCountry":"Turkey","DepartureDate":"2025-09-15T10:30:00","DepartureAirport":"CAI","ArrivalAirport":"BER","EconomyPrice":250,"BusinessPrice":550.5,"FirstClassPrice":975,"Price":250},{"FlightID":102,"DepartureCountry":"Palestine","DestinationCountry":"Egypt","DepartureDate":"2025-09-20T14:00:00","DepartureAirport":"QAIA","ArrivalAirport":"CAI","EconomyPrice":180,"BusinessPrice":400,"FirstClassPrice":750,"Price":180},{"FlightID":103,"DepartureCountry":"Turkey","DestinationCountry":"Germany","DepartureDate":"2025-10-05T08:45:00","DepartureAirport":"IST","ArrivalAirport":"BER","EconomyPrice":320,"BusinessPrice":700,"FirstClassPrice":1250,"Price":320},{"FlightID":104,"DepartureCountry":"UAE","DestinationCountry":"UK","DepartureDate":"2025-10-10T23:00:00","DepartureAirport":"DXB","ArrivalAirport":"LHR","EconomyPrice":450,"BusinessPrice":1500,"FirstClassPrice":3200,"Price":450},{"FlightID":105,"DepartureCountry":"Palestine","DestinationCountry":"UAE","DepartureDate":"2025-10-12T18:00:00","DepartureAirport":"QAIA","ArrivalAirport":"DXB","EconomyPrice":210,"BusinessPrice":500,"FirstClassPrice":950,"Price":210},{"FlightID":106,"DepartureCountry":"Germany","DestinationCountry":"Palestine","DepartureDate":"2025-10-18T12:15:00","DepartureAirport":"BER","ArrivalAirport":"QAIA","EconomyPrice":350,"BusinessPrice":750,"FirstClassPrice":1300,"Price":350},{"FlightID":107,"DepartureCountry":"Egypt","DestinationCountry":"Saudi Arabia","DepartureDate":"2025-11-01T06:00:00","DepartureAirport":"CAI","ArrivalAirport":"JED","EconomyPrice":150,"BusinessPrice":350,"FirstClassPrice":650,"Price":150},{"FlightID":108,"DepartureCountry":"UK","DestinationCountry":"USA","DepartureDate":"2025-11-05T11:30:00","DepartureAirport":"LHR","ArrivalAirport":"JFK","EconomyPrice":600,"BusinessPrice":2200,"FirstClassPrice":4500,"Price":600},{"FlightID":109,"DepartureCountry":"Palestine","DestinationCountry":"Qatar","DepartureDate":"2025-11-10T20:00:00","DepartureAirport":"QAIA","ArrivalAirport":"DOH","EconomyPrice":230,"BusinessPrice":520,"FirstClassPrice":980,"Price":230},{"FlightID":110,"DepartureCountry":"USA","DestinationCountry":"Canada","DepartureDate":"2025-11-15T15:00:00","DepartureAirport":"JFK","ArrivalAirport":"YYZ","EconomyPrice":280,"BusinessPrice":600,"FirstClassPrice":1100,"Price":280},{"FlightID":111,"DepartureCountry":"France","DestinationCountry":"Turkey","DepartureDate":"2025-11-22T09:20:00","DepartureAirport":"CDG","ArrivalAirport":"IST","EconomyPrice":290,"BusinessPrice":650,"FirstClassPrice":1150,"Price":290},{"FlightID":112,"DepartureCountry":"Saudi Arabia","DestinationCountry":"Palestine","DepartureDate":"2025-12-01T17:00:00","DepartureAirport":"JED","ArrivalAirport":"QAIA","EconomyPrice":190,"BusinessPrice":420,"FirstClassPrice":800,"Price":190},{"FlightID":113,"DepartureCountry":"Qatar","DestinationCountry":"France","DepartureDate":"2025-12-10T01:30:00","DepartureAirport":"DOH","ArrivalAirport":"CDG","EconomyPrice":550,"BusinessPrice":1800,"FirstClassPrice":3500,"Price":550},{"FlightID":114,"DepartureCountry":"Canada","DestinationCountry":"UK","DepartureDate":"2025-12-15T22:00:00","DepartureAirport":"YYZ","ArrivalAirport":"LHR","EconomyPrice":580,"BusinessPrice":2100,"FirstClassPrice":4300,"Price":580},{"FlightID":115,"DepartureCountry":"Palestine","DestinationCountry":"Italy","DepartureDate":"2025-12-20T07:00:00","DepartureAirport":"QAIA","ArrivalAirport":"FCO","EconomyPrice":310,"BusinessPrice":680,"FirstClassPrice":1200,"Price":310},{"FlightID":101,"DepartureCountry":"USA","DestinationCountry":"UK","DepartureDate":"2025-09-15T10:30:00","DepartureAirport":"JFK","ArrivalAirport":"LHR","EconomyPrice":550,"BusinessPrice":1200.5,"FirstClassPrice":2500,"Price":550},{"FlightID":102,"DepartureCountry":"France","DestinationCountry":"Japan","DepartureDate":"2025-10-20T22:00:00","DepartureAirport":"CDG","ArrivalAirport":"NRT","EconomyPrice":820.5,"BusinessPrice":1800,"FirstClassPrice":3500.75,"Price":820.5},{"FlightID":103,"DepartureCountry":"Germany","DestinationCountry":"USA","DepartureDate":"2026-05-01T12:00:00","DepartureAirport":"FRA","ArrivalAirport":"SFO","EconomyPrice":600,"BusinessPrice":1350,"FirstClassPrice":2800,"Price":600},{"FlightID":104,"DepartureCountry":"UK","DestinationCountry":"Canada","DepartureDate":"2025-11-05T14:00:00","DepartureAirport":"LHR","ArrivalAirport":"toronto","EconomyPrice":400,"BusinessPrice":950,"FirstClassPrice":1900,"Price":400},{"FlightID":105,"DepartureCountry":"UAE","DestinationCountry":"Australia","DepartureDate":"2025-09-25T08:45:00","DepartureAirport":"DXB","ArrivalAirport":"SYD","EconomyPrice":950.25,"BusinessPrice":2100,"FirstClassPrice":4250.5,"Price":950.25},{"FlightID":101,"DepartureCountry":"USA","DestinationCountry":"UK","DepartureDate":"2025-09-15T10:30:00","DepartureAirport":"JFK","ArrivalAirport":"LHR","EconomyPrice":550,"BusinessPrice":1200.5,"FirstClassPrice":2500,"Price":550},{"FlightID":102,"DepartureCountry":"France","DestinationCountry":"Japan","DepartureDate":"2025-10-20T22:00:00","DepartureAirport":"CDG","ArrivalAirport":"NRT","EconomyPrice":820.5,"BusinessPrice":1800,"FirstClassPrice":3500.75,"Price":820.5},{"FlightID":103,"DepartureCountry":"Germany","DestinationCountry":"USA","DepartureDate":"2026-05-01T12:00:00","DepartureAirport":"FRA","ArrivalAirport":"SFO","EconomyPrice":600,"BusinessPrice":1350,"FirstClassPrice":2800,"Price":600},{"FlightID":104,"DepartureCountry":"UK","DestinationCountry":"Canada","DepartureDate":"2025-11-05T14:00:00","DepartureAirport":"LHR","ArrivalAirport":"toronto","EconomyPrice":400,"BusinessPrice":950,"FirstClassPrice":1900,"Price":400},{"FlightID":105,"DepartureCountry":"UAE","DestinationCountry":"Australia","DepartureDate":"2025-09-25T08:45:00","DepartureAirport":"DXB","ArrivalAirport":"SYD","EconomyPrice":950.25,"BusinessPrice":2100,"FirstClassPrice":4250.5,"Price":950.25},{"FlightID":101,"DepartureCountry":"USA","DestinationCountry":"UK","DepartureDate":"2025-09-15T10:30:00","DepartureAirport":"JFK","ArrivalAirport":"LHR","EconomyPrice":550,"BusinessPrice":1200.5,"FirstClassPrice":2500,"Price":550},{"FlightID":102,"DepartureCountry":"France","DestinationCountry":"Japan","DepartureDate":"2025-10-20T22:00:00","DepartureAirport":"CDG","ArrivalAirport":"NRT","EconomyPrice":820.5,"BusinessPrice":1800,"FirstClassPrice":3500.75,"Price":820.5},{"FlightID":103,"DepartureCountry":"Germany","DestinationCountry":"USA","DepartureDate":"2026-05-01T12:00:00","DepartureAirport":"FRA","ArrivalAirport":"SFO","EconomyPrice":600,"BusinessPrice":1350,"FirstClassPrice":2800,"Price":600},{"FlightID":104,"DepartureCountry":"UK","DestinationCountry":"Canada","DepartureDate":"2025-11-05T14:00:00","DepartureAirport":"LHR","ArrivalAirport":"toronto","EconomyPrice":400,"BusinessPrice":950,"FirstClassPrice":1900,"Price":400},{"FlightID":105,"DepartureCountry":"UAE","DestinationCountry":"Australia","DepartureDate":"2025-09-25T08:45:00","DepartureAirport":"DXB","ArrivalAirport":"SYD","EconomyPrice":950.25,"BusinessPrice":2100,"FirstClassPrice":4250.5,"Price":950.25},{"FlightID":101,"DepartureCountry":"USA","DestinationCountry":"UK","DepartureDate":"2025-09-15T10:30:00","DepartureAirport":"JFK","ArrivalAirport":"LHR","EconomyPrice":550,"BusinessPrice":1200.5,"FirstClassPrice":2500,"Price":550},{"FlightID":102,"DepartureCountry":"France","DestinationCountry":"Japan","DepartureDate":"2025-10-20T22:00:00","DepartureAirport":"CDG","ArrivalAirport":"NRT","EconomyPrice":820.5,"BusinessPrice":1800,"FirstClassPrice":3500.75,"Price":820.5},{"FlightID":103,"DepartureCountry":"Germany","DestinationCountry":"USA","DepartureDate":"2026-05-01T12:00:00","DepartureAirport":"FRA","ArrivalAirport":"SFO","EconomyPrice":600,"BusinessPrice":1350,"FirstClassPrice":2800,"Price":600},{"FlightID":104,"DepartureCountry":"UK","DestinationCountry":"Canada","DepartureDate":"2025-11-05T14:00:00","DepartureAirport":"LHR","ArrivalAirport":"toronto","EconomyPrice":400,"BusinessPrice":950,"FirstClassPrice":1900,"Price":400},{"FlightID":105,"DepartureCountry":"UAE","DestinationCountry":"Australia","DepartureDate":"2025-09-25T08:45:00","DepartureAirport":"DXB","ArrivalAirport":"SYD","EconomyPrice":950.25,"BusinessPrice":2100,"FirstClassPrice":4250.5,"Price":950.25},{"FlightID":101,"DepartureCountry":"USA","DestinationCountry":"UK","DepartureDate":"2025-09-15T10:30:00","DepartureAirport":"JFK","ArrivalAirport":"LHR","EconomyPrice":550,"BusinessPrice":1200.5,"FirstClassPrice":2500,"Price":550},{"FlightID":102,"DepartureCountry":"France","DestinationCountry":"Japan","DepartureDate":"2025-10-20T22:00:00","DepartureAirport":"CDG","ArrivalAirport":"NRT","EconomyPrice":820.5,"BusinessPrice":1800,"FirstClassPrice":3500.75,"Price":820.5},{"FlightID":103,"DepartureCountry":"Germany","DestinationCountry":"USA","DepartureDate":"2026-05-01T12:00:00","DepartureAirport":"FRA","ArrivalAirport":"SFO","EconomyPrice":600,"BusinessPrice":1350,"FirstClassPrice":2800,"Price":600},{"FlightID":104,"DepartureCountry":"UK","DestinationCountry":"Canada","DepartureDate":"2025-11-05T14:00:00","DepartureAirport":"LHR","ArrivalAirport":"toronto","EconomyPrice":400,"BusinessPrice":950,"FirstClassPrice":1900,"Price":400},{"FlightID":105,"DepartureCountry":"UAE","DestinationCountry":"Australia","DepartureDate":"2025-09-25T08:45:00","DepartureAirport":"DXB","ArrivalAirport":"SYD","EconomyPrice":950.25,"BusinessPrice":2100,"FirstClassPrice":4250.5,"Price":950.25}]
+\ No newline at end of file
++[
++    {
++        "FlightID": 101,
++        "DepartureCountry": "Palestine",
++        "DestinationCountry": "Turkey",
++        "DepartureDate": "2025-09-15T10:30:00",
++        "DepartureAirport": "QAIA",
++        "ArrivalAirport": "IST",
++        "EconomyPrice": 250,
++        "BusinessPrice": 550.5,
++        "FirstClassPrice": 975,
++        "Price": 250
++    },
++    {
++        "FlightID": 116,
++        "DepartureCountry": "Palestine",
++        "DestinationCountry": "Turkey",
++        "DepartureDate": "2025-09-15T10:30:00",
++        "DepartureAirport": "CAI",
++        "ArrivalAirport": "BER",
++        "EconomyPrice": 250,
++        "BusinessPrice": 550.5,
++        "FirstClassPrice": 975,
++        "Price": 250
++    },
++    {
++        "FlightID": 102,
++        "DepartureCountry": "Palestine",
++        "DestinationCountry": "Egypt",
++        "DepartureDate": "2025-09-20T14:00:00",
++        "DepartureAirport": "QAIA",
++        "ArrivalAirport": "CAI",
++        "EconomyPrice": 180,
++        "BusinessPrice": 400,
++        "FirstClassPrice": 750,
++        "Price": 180
++    },
++    {
++        "FlightID": 103,
++        "DepartureCountry": "Turkey",
++        "DestinationCountry": "Germany",
++        "DepartureDate": "2025-10-05T08:45:00",
++        "DepartureAirport": "IST",
++        "ArrivalAirport": "BER",
++        "EconomyPrice": 320,
++        "BusinessPrice": 700,
++        "FirstClassPrice": 1250,
++        "Price": 320
++    },
++    {
++        "FlightID": 104,
++        "DepartureCountry": "UAE",
++        "DestinationCountry": "UK",
++        "DepartureDate": "2025-10-10T23:00:00",
++        "DepartureAirport": "DXB",
++        "ArrivalAirport": "LHR",
++        "EconomyPrice": 450,
++        "BusinessPrice": 1500,
++        "FirstClassPrice": 3200,
++        "Price": 450
++    },
++    {
++        "FlightID": 105,
++        "DepartureCountry": "Palestine",
++        "DestinationCountry": "UAE",
++        "DepartureDate": "2025-10-12T18:00:00",
++        "DepartureAirport": "QAIA",
++        "ArrivalAirport": "DXB",
++        "EconomyPrice": 210,
++        "BusinessPrice": 500,
++        "FirstClassPrice": 950,
++        "Price": 210
++    },
++    {
++        "FlightID": 106,
++        "DepartureCountry": "Germany",
++        "DestinationCountry": "Palestine",
++        "DepartureDate": "2025-10-18T12:15:00",
++        "DepartureAirport": "BER",
++        "ArrivalAirport": "QAIA",
++        "EconomyPrice": 350,
++        "BusinessPrice": 750,
++        "FirstClassPrice": 1300,
++        "Price": 350
++    },
++    {
++        "FlightID": 107,
++        "DepartureCountry": "Egypt",
++        "DestinationCountry": "Saudi Arabia",
++        "DepartureDate": "2025-11-01T06:00:00",
++        "DepartureAirport": "CAI",
++        "ArrivalAirport": "JED",
++        "EconomyPrice": 150,
++        "BusinessPrice": 350,
++        "FirstClassPrice": 650,
++        "Price": 150
++    },
++    {
++        "FlightID": 108,
++        "DepartureCountry": "UK",
++        "DestinationCountry": "USA",
++        "DepartureDate": "2025-11-05T11:30:00",
++        "DepartureAirport": "LHR",
++        "ArrivalAirport": "JFK",
++        "EconomyPrice": 600,
++        "BusinessPrice": 2200,
++        "FirstClassPrice": 4500,
++        "Price": 600
++    },
++    {
++        "FlightID": 109,
++        "DepartureCountry": "Palestine",
++        "DestinationCountry": "Qatar",
++        "DepartureDate": "2025-11-10T20:00:00",
++        "DepartureAirport": "QAIA",
++        "ArrivalAirport": "DOH",
++        "EconomyPrice": 230,
++        "BusinessPrice": 520,
++        "FirstClassPrice": 980,
++        "Price": 230
++    },
++    {
++        "FlightID": 110,
++        "DepartureCountry": "USA",
++        "DestinationCountry": "Canada",
++        "DepartureDate": "2025-11-15T15:00:00",
++        "DepartureAirport": "JFK",
++        "ArrivalAirport": "YYZ",
++        "EconomyPrice": 280,
++        "BusinessPrice": 600,
++        "FirstClassPrice": 1100,
++        "Price": 280
++    },
++    {
++        "FlightID": 111,
++        "DepartureCountry": "France",
++        "DestinationCountry": "Turkey",
++        "DepartureDate": "2025-11-22T09:20:00",
++        "DepartureAirport": "CDG",
++        "ArrivalAirport": "IST",
++        "EconomyPrice": 290,
++        "BusinessPrice": 650,
++        "FirstClassPrice": 1150,
++        "Price": 290
++    },
++    {
++        "FlightID": 112,
++        "DepartureCountry": "Saudi Arabia",
++        "DestinationCountry": "Palestine",
++        "DepartureDate": "2025-12-01T17:00:00",
++        "DepartureAirport": "JED",
++        "ArrivalAirport": "QAIA",
++        "EconomyPrice": 190,
++        "BusinessPrice": 420,
++        "FirstClassPrice": 800,
++        "Price": 190
++    },
++    {
++        "FlightID": 113,
++        "DepartureCountry": "Qatar",
++        "DestinationCountry": "France",
++        "DepartureDate": "2025-12-10T01:30:00",
++        "DepartureAirport": "DOH",
++        "ArrivalAirport": "CDG",
++        "EconomyPrice": 550,
++        "BusinessPrice": 1800,
++        "FirstClassPrice": 3500,
++        "Price": 550
++    },
++    {
++        "FlightID": 114,
++        "DepartureCountry": "Canada",
++        "DestinationCountry": "UK",
++        "DepartureDate": "2025-12-15T22:00:00",
++        "DepartureAirport": "YYZ",
++        "ArrivalAirport": "LHR",
++        "EconomyPrice": 580,
++        "BusinessPrice": 2100,
++        "FirstClassPrice": 4300,
++        "Price": 580
++    },
++    {
++        "FlightID": 115,
++        "DepartureCountry": "Palestine",
++        "DestinationCountry": "Italy",
++        "DepartureDate": "2025-12-20T07:00:00",
++        "DepartureAirport": "QAIA",
++        "ArrivalAirport": "FCO",
++        "EconomyPrice": 310,
++        "BusinessPrice": 680,
++        "FirstClassPrice": 1200,
++        "Price": 310
++    },
++    {
++        "FlightID": 101,
++        "DepartureCountry": "USA",
++        "DestinationCountry": "UK",
++        "DepartureDate": "2025-09-15T10:30:00",
++        "DepartureAirport": "JFK",
++        "ArrivalAirport": "LHR",
++        "EconomyPrice": 550,
++        "BusinessPrice": 1200.5,
++        "FirstClassPrice": 2500,
++        "Price": 550
++    },
++    {
++        "FlightID": 102,
++        "DepartureCountry": "France",
++        "DestinationCountry": "Japan",
++        "DepartureDate": "2025-10-20T22:00:00",
++        "DepartureAirport": "CDG",
++        "ArrivalAirport": "NRT",
++        "EconomyPrice": 820.5,
++        "BusinessPrice": 1800,
++        "FirstClassPrice": 3500.75,
++        "Price": 820.5
++    },
++    {
++        "FlightID": 103,
++        "DepartureCountry": "Germany",
++        "DestinationCountry": "USA",
++        "DepartureDate": "2026-05-01T12:00:00",
++        "DepartureAirport": "FRA",
++        "ArrivalAirport": "SFO",
++        "EconomyPrice": 600,
++        "BusinessPrice": 1350,
++        "FirstClassPrice": 2800,
++        "Price": 600
++    },
++    {
++        "FlightID": 104,
++        "DepartureCountry": "UK",
++        "DestinationCountry": "Canada",
++        "DepartureDate": "2025-11-05T14:00:00",
++        "DepartureAirport": "LHR",
++        "ArrivalAirport": "toronto",
++        "EconomyPrice": 400,
++        "BusinessPrice": 950,
++        "FirstClassPrice": 1900,
++        "Price": 400
++    },
++    {
++        "FlightID": 105,
++        "DepartureCountry": "UAE",
++        "DestinationCountry": "Australia",
++        "DepartureDate": "2025-09-25T08:45:00",
++        "DepartureAirport": "DXB",
++        "ArrivalAirport": "SYD",
++        "EconomyPrice": 950.25,
++        "BusinessPrice": 2100,
++        "FirstClassPrice": 4250.5,
++        "Price": 950.25
++    },
++    {
++        "FlightID": 101,
++        "DepartureCountry": "USA",
++        "DestinationCountry": "UK",
++        "DepartureDate": "2025-09-15T10:30:00",
++        "DepartureAirport": "JFK",
++        "ArrivalAirport": "LHR",
++        "EconomyPrice": 550,
++        "BusinessPrice": 1200.5,
++        "FirstClassPrice": 2500,
++        "Price": 550
++    },
++    {
++        "FlightID": 102,
++        "DepartureCountry": "France",
++        "DestinationCountry": "Japan",
++        "DepartureDate": "2025-10-20T22:00:00",
++        "DepartureAirport": "CDG",
++        "ArrivalAirport": "NRT",
++        "EconomyPrice": 820.5,
++        "BusinessPrice": 1800,
++        "FirstClassPrice": 3500.75,
++        "Price": 820.5
++    },
++    {
++        "FlightID": 103,
++        "DepartureCountry": "Germany",
++        "DestinationCountry": "USA",
++        "DepartureDate": "2026-05-01T12:00:00",
++        "DepartureAirport": "FRA",
++        "ArrivalAirport": "SFO",
++        "EconomyPrice": 600,
++        "BusinessPrice": 1350,
++        "FirstClassPrice": 2800,
++        "Price": 600
++    },
++    {
++        "FlightID": 104,
++        "DepartureCountry": "UK",
++        "DestinationCountry": "Canada",
++        "DepartureDate": "2025-11-05T14:00:00",
++        "DepartureAirport": "LHR",
++        "ArrivalAirport": "toronto",
++        "EconomyPrice": 400,
++        "BusinessPrice": 950,
++        "FirstClassPrice": 1900,
++        "Price": 400
++    },
++    {
++        "FlightID": 105,
++        "DepartureCountry": "UAE",
++        "DestinationCountry": "Australia",
++        "DepartureDate": "2025-09-25T08:45:00",
++        "DepartureAirport": "DXB",
++        "ArrivalAirport": "SYD",
++        "EconomyPrice": 950.25,
++        "BusinessPrice": 2100,
++        "FirstClassPrice": 4250.5,
++        "Price": 950.25
++    },
++    {
++        "FlightID": 101,
++        "DepartureCountry": "USA",
++        "DestinationCountry": "UK",
++        "DepartureDate": "2025-09-15T10:30:00",
++        "DepartureAirport": "JFK",
++        "ArrivalAirport": "LHR",
++        "EconomyPrice": 550,
++        "BusinessPrice": 1200.5,
++        "FirstClassPrice": 2500,
++        "Price": 550
++    },
++    {
++        "FlightID": 102,
++        "DepartureCountry": "France",
++        "DestinationCountry": "Japan",
++        "DepartureDate": "2025-10-20T22:00:00",
++        "DepartureAirport": "CDG",
++        "ArrivalAirport": "NRT",
++        "EconomyPrice": 820.5,
++        "BusinessPrice": 1800,
++        "FirstClassPrice": 3500.75,
++        "Price": 820.5
++    },
++    {
++        "FlightID": 103,
++        "DepartureCountry": "Germany",
++        "DestinationCountry": "USA",
++        "DepartureDate": "2026-05-01T12:00:00",
++        "DepartureAirport": "FRA",
++        "ArrivalAirport": "SFO",
++        "EconomyPrice": 600,
++        "BusinessPrice": 1350,
++        "FirstClassPrice": 2800,
++        "Price": 600
++    },
++    {
++        "FlightID": 104,
++        "DepartureCountry": "UK",
++        "DestinationCountry": "Canada",
++        "DepartureDate": "2025-11-05T14:00:00",
++        "DepartureAirport": "LHR",
++        "ArrivalAirport": "toronto",
++        "EconomyPrice": 400,
++        "BusinessPrice": 950,
++        "FirstClassPrice": 1900,
++        "Price": 400
++    },
++    {
++        "FlightID": 105,
++        "DepartureCountry": "UAE",
++        "DestinationCountry": "Australia",
++        "DepartureDate": "2025-09-25T08:45:00",
++        "DepartureAirport": "DXB",
++        "ArrivalAirport": "SYD",
++        "EconomyPrice": 950.25,
++        "BusinessPrice": 2100,
++        "FirstClassPrice": 4250.5,
++        "Price": 950.25
++    },
++    {
++        "FlightID": 101,
++        "DepartureCountry": "USA",
++        "DestinationCountry": "UK",
++        "DepartureDate": "2025-09-15T10:30:00",
++        "DepartureAirport": "JFK",
++        "ArrivalAirport": "LHR",
++        "EconomyPrice": 550,
++        "BusinessPrice": 1200.5,
++        "FirstClassPrice": 2500,
++        "Price": 550
++    },
++    {
++        "FlightID": 102,
++        "DepartureCountry": "France",
++        "DestinationCountry": "Japan",
++        "DepartureDate": "2025-10-20T22:00:00",
++        "DepartureAirport": "CDG",
++        "ArrivalAirport": "NRT",
++        "EconomyPrice": 820.5,
++        "BusinessPrice": 1800,
++        "FirstClassPrice": 3500.75,
++        "Price": 820.5
++    },
++    {
++        "FlightID": 103,
++        "DepartureCountry": "Germany",
++        "DestinationCountry": "USA",
++        "DepartureDate": "2026-05-01T12:00:00",
++        "DepartureAirport": "FRA",
++        "ArrivalAirport": "SFO",
++        "EconomyPrice": 600,
++        "BusinessPrice": 1350,
++        "FirstClassPrice": 2800,
++        "Price": 600
++    },
++    {
++        "FlightID": 104,
++        "DepartureCountry": "UK",
++        "DestinationCountry": "Canada",
++        "DepartureDate": "2025-11-05T14:00:00",
++        "DepartureAirport": "LHR",
++        "ArrivalAirport": "toronto",
++        "EconomyPrice": 400,
++        "BusinessPrice": 950,
++        "FirstClassPrice": 1900,
++        "Price": 400
++    },
++    {
++        "FlightID": 105,
++        "DepartureCountry": "UAE",
++        "DestinationCountry": "Australia",
++        "DepartureDate": "2025-09-25T08:45:00",
++        "DepartureAirport": "DXB",
++        "ArrivalAirport": "SYD",
++        "EconomyPrice": 950.25,
++        "BusinessPrice": 2100,
++        "FirstClassPrice": 4250.5,
++        "Price": 950.25
++    },
++    {
++        "FlightID": 101,
++        "DepartureCountry": "USA",
++        "DestinationCountry": "UK",
++        "DepartureDate": "2025-09-15T10:30:00",
++        "DepartureAirport": "JFK",
++        "ArrivalAirport": "LHR",
++        "EconomyPrice": 550,
++        "BusinessPrice": 1200.5,
++        "FirstClassPrice": 2500,
++        "Price": 550
++    },
++    {
++        "FlightID": 102,
++        "DepartureCountry": "France",
++        "DestinationCountry": "Japan",
++        "DepartureDate": "2025-10-20T22:00:00",
++        "DepartureAirport": "CDG",
++        "ArrivalAirport": "NRT",
++        "EconomyPrice": 820.5,
++        "BusinessPrice": 1800,
++        "FirstClassPrice": 3500.75,
++        "Price": 820.5
++    },
++    {
++        "FlightID": 103,
++        "DepartureCountry": "Germany",
++        "DestinationCountry": "USA",
++        "DepartureDate": "2026-05-01T12:00:00",
++        "DepartureAirport": "FRA",
++        "ArrivalAirport": "SFO",
++        "EconomyPrice": 600,
++        "BusinessPrice": 1350,
++        "FirstClassPrice": 2800,
++        "Price": 600
++    },
++    {
++        "FlightID": 104,
++        "DepartureCountry": "UK",
++        "DestinationCountry": "Canada",
++        "DepartureDate": "2025-11-05T14:00:00",
++        "DepartureAirport": "LHR",
++        "ArrivalAirport": "toronto",
++        "EconomyPrice": 400,
++        "BusinessPrice": 950,
++        "FirstClassPrice": 1900,
++        "Price": 400
++    },
++    {
++        "FlightID": 105,
++        "DepartureCountry": "UAE",
++        "DestinationCountry": "Australia",
++        "DepartureDate": "2025-09-25T08:45:00",
++        "DepartureAirport": "DXB",
++        "ArrivalAirport": "SYD",
++        "EconomyPrice": 950.25,
++        "BusinessPrice": 2100,
++        "FirstClassPrice": 4250.5,
++        "Price": 950.25
++    },
++    {
++        "FlightID": 101,
++        "DepartureCountry": "USA",
++        "DestinationCountry": "UK",
++        "DepartureDate": "2025-09-15T10:30:00",
++        "DepartureAirport": "JFK",
++        "ArrivalAirport": "LHR",
++        "EconomyPrice": 550,
++        "BusinessPrice": 1200.5,
++        "FirstClassPrice": 2500,
++        "Price": 550
++    },
++    {
++        "FlightID": 102,
++        "DepartureCountry": "France",
++        "DestinationCountry": "Japan",
++        "DepartureDate": "2025-10-20T22:00:00",
++        "DepartureAirport": "CDG",
++        "ArrivalAirport": "NRT",
++        "EconomyPrice": 820.5,
++        "BusinessPrice": 1800,
++        "FirstClassPrice": 3500.75,
++        "Price": 820.5
++    },
++    {
++        "FlightID": 103,
++        "DepartureCountry": "Germany",
++        "DestinationCountry": "USA",
++        "DepartureDate": "2026-05-01T12:00:00",
++        "DepartureAirport": "FRA",
++        "ArrivalAirport": "SFO",
++        "EconomyPrice": 600,
++        "BusinessPrice": 1350,
++        "FirstClassPrice": 2800,
++        "Price": 600
++    },
++    {
++        "FlightID": 104,
++        "DepartureCountry": "UK",
++        "DestinationCountry": "Canada",
++        "DepartureDate": "2025-11-05T14:00:00",
++        "DepartureAirport": "LHR",
++        "ArrivalAirport": "toronto",
++        "EconomyPrice": 400,
++        "BusinessPrice": 950,
++        "FirstClassPrice": 1900,
++        "Price": 400
++    },
++    {
++        "FlightID": 105,
++        "DepartureCountry": "UAE",
++        "DestinationCountry": "Australia",
++        "DepartureDate": "2025-09-25T08:45:00",
++        "DepartureAirport": "DXB",
++        "ArrivalAirport": "SYD",
++        "EconomyPrice": 950.25,
++        "BusinessPrice": 2100,
++        "FirstClassPrice": 4250.5,
++        "Price": 950.25
++    }
++]
+\ No newline at end of file
+Index: AirportTicketBooking/obj/Debug/net9.0/AirportTicketBooking.AssemblyInfo.cs
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>//------------------------------------------------------------------------------\r\n// <auto-generated>\r\n//     This code was generated by a tool.\r\n//\r\n//     Changes to this file may cause incorrect behavior and will be lost if\r\n//     the code is regenerated.\r\n// </auto-generated>\r\n//------------------------------------------------------------------------------\r\n\r\nusing System;\r\nusing System.Reflection;\r\n\r\n[assembly: System.Reflection.AssemblyCompanyAttribute(\"AirportTicketBooking\")]\r\n[assembly: System.Reflection.AssemblyConfigurationAttribute(\"Debug\")]\r\n[assembly: System.Reflection.AssemblyFileVersionAttribute(\"1.0.0.0\")]\r\n[assembly: System.Reflection.AssemblyInformationalVersionAttribute(\"1.0.0+d7bf41f7c5cbc3c9a653428e26d47e3a001ff3d9\")]\r\n[assembly: System.Reflection.AssemblyProductAttribute(\"AirportTicketBooking\")]\r\n[assembly: System.Reflection.AssemblyTitleAttribute(\"AirportTicketBooking\")]\r\n[assembly: System.Reflection.AssemblyVersionAttribute(\"1.0.0.0\")]\r\n\r\n// Generated by the MSBuild WriteCodeFragment class.\r\n\r\n
+===================================================================
+diff --git a/AirportTicketBooking/obj/Debug/net9.0/AirportTicketBooking.AssemblyInfo.cs b/AirportTicketBooking/obj/Debug/net9.0/AirportTicketBooking.AssemblyInfo.cs
+--- a/AirportTicketBooking/obj/Debug/net9.0/AirportTicketBooking.AssemblyInfo.cs	(revision 815ebc54af6ca7b8f5851b28e0524d791c177b94)
++++ b/AirportTicketBooking/obj/Debug/net9.0/AirportTicketBooking.AssemblyInfo.cs	(date 1754836152046)
+@@ -13,7 +13,7 @@
+ [assembly: System.Reflection.AssemblyCompanyAttribute("AirportTicketBooking")]
+ [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
+ [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
+-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d7bf41f7c5cbc3c9a653428e26d47e3a001ff3d9")]
++[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+815ebc54af6ca7b8f5851b28e0524d791c177b94")]
+ [assembly: System.Reflection.AssemblyProductAttribute("AirportTicketBooking")]
+ [assembly: System.Reflection.AssemblyTitleAttribute("AirportTicketBooking")]
+ [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

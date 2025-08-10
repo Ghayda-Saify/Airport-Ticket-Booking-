@@ -1,0 +1,13 @@
+Index: AirportTicketBooking/Data/newFlights.csv
+===================================================================
+diff --git a/AirportTicketBooking/Data/newFlights.csv b/AirportTicketBooking/Data/newFlights.csv
+deleted file mode 100644
+--- a/AirportTicketBooking/Data/newFlights.csv	(revision 815ebc54af6ca7b8f5851b28e0524d791c177b94)
++++ /dev/null	(revision 815ebc54af6ca7b8f5851b28e0524d791c177b94)
+@@ -1,6 +0,0 @@
+-FlightID,DepartureCountry,DestinationCountry,DepartureDate,DepartureAirport,ArrivalAirport,EconomyPrice,BusinessPrice,FirstClassPrice,Price
+-101,USA,UK,2025-09-15T10:30:00,JFK,LHR,550.00,1200.50,2500.00,550.00
+-102,France,Japan,2025-10-20T22:00:00,CDG,NRT,820.50,1800.00,3500.75,820.50
+-103,Germany,USA,2026-05-01T12:00:00,FRA,SFO,600.00,1350.00,2800.00,600.00
+-104,UK,Canada,2025-11-05T14:00:00,LHR,toronto,400.00,950.00,1900.00,400.00
+-105,UAE,Australia,2025-09-25T08:45:00,DXB,SYD,950.25,2100.00,4250.50,950.25
