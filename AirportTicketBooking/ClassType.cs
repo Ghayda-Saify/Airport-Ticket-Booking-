@@ -2,5 +2,5 @@
 
 public enum ClassType
 {
-    
+    Economy,Business,FirstClass
 }

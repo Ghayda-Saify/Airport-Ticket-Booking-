@@ -1,17 +1,1 @@
-﻿[
-  { "BookingId": 1001, "FlightId": 101, "PassengerId": 1, "FlightClass": "Economy", "PricePaid": 250.00 },
-  { "BookingId": 1002, "FlightId": 102, "PassengerId": 2, "FlightClass": "Business", "PricePaid": 400.00 },
-  { "BookingId": 1003, "FlightId": 101, "PassengerId": 3, "FlightClass": "FirstClass", "PricePaid": 975.00 },
-  { "BookingId": 1004, "FlightId": 104, "PassengerId": 4, "FlightClass": "Business", "PricePaid": 1500.00 },
-  { "BookingId": 1005, "FlightId": 105, "PassengerId": 5, "FlightClass": "Economy", "PricePaid": 210.00 },
-  { "BookingId": 1006, "FlightId": 108, "PassengerId": 6, "FlightClass": "FirstClass", "PricePaid": 4500.00 },
-  { "BookingId": 1007, "FlightId": 107, "PassengerId": 7, "FlightClass": "Economy", "PricePaid": 150.00 },
-  { "BookingId": 1008, "FlightId": 103, "PassengerId": 8, "FlightClass": "Economy", "PricePaid": 320.00 },
-  { "BookingId": 1009, "FlightId": 109, "PassengerId": 9, "FlightClass": "Business", "PricePaid": 520.00 },
-  { "BookingId": 1010, "FlightId": 111, "PassengerId": 10, "FlightClass": "FirstClass", "PricePaid": 1150.00 },
-  { "BookingId": 1011, "FlightId": 113, "PassengerId": 11, "FlightClass": "Economy", "PricePaid": 550.00 },
-  { "BookingId": 1012, "FlightId": 115, "PassengerId": 12, "FlightClass": "Business", "PricePaid": 680.00 },
-  { "BookingId": 1013, "FlightId": 110, "PassengerId": 13, "FlightClass": "Economy", "PricePaid": 280.00 },
-  { "BookingId": 1014, "FlightId": 114, "PassengerId": 14, "FlightClass": "FirstClass", "PricePaid": 4300.00 },
-  { "BookingId": 1015, "FlightId": 106, "PassengerId": 15, "FlightClass": "Business", "PricePaid": 750.00 }
-]
+[{"BookingID":1001,"FlightId":101,"PassengerId":1,"FlightClass":"Economy"},{"BookingID":1002,"FlightId":102,"PassengerId":2,"FlightClass":"Business"},{"BookingID":1003,"FlightId":103,"PassengerId":3,"FlightClass":"FirstClass"},{"BookingID":1004,"FlightId":104,"PassengerId":4,"FlightClass":"Business"},{"BookingID":1005,"FlightId":105,"PassengerId":5,"FlightClass":"Economy"},{"BookingID":1006,"FlightId":106,"PassengerId":6,"FlightClass":"FirstClass"},{"BookingID":1007,"FlightId":107,"PassengerId":7,"FlightClass":"Economy"},{"BookingID":1008,"FlightId":108,"PassengerId":8,"FlightClass":"Economy"},{"BookingID":1009,"FlightId":109,"PassengerId":9,"FlightClass":"Business"},{"BookingID":1010,"FlightId":110,"PassengerId":10,"FlightClass":"FirstClass"},{"BookingID":1011,"FlightId":111,"PassengerId":11,"FlightClass":"Economy"},{"BookingID":1012,"FlightId":112,"PassengerId":12,"FlightClass":"Business"},{"BookingID":1013,"FlightId":113,"PassengerId":13,"FlightClass":"Economy"},{"BookingID":1014,"FlightId":114,"PassengerId":14,"FlightClass":"FirstClass"},{"BookingID":1015,"FlightId":115,"PassengerId":15,"FlightClass":"Business"},{"BookingID":0,"FlightId":105,"PassengerId":4,"FlightClass":"Economy"},{"BookingID":0,"FlightId":116,"PassengerId":4,"FlightClass":"FirstClass"}]
