@@ -1,0 +1,92 @@
+﻿[
+  {
+    "BookingID": 1001,
+    "FlightId": 101,
+    "PassengerId": 1,
+    "FlightClass": "Economy"
+  },
+  {
+    "BookingID": 1002,
+    "FlightId": 102,
+    "PassengerId": 2,
+    "FlightClass": "Business"
+  },
+  {
+    "BookingID": 1003,
+    "FlightId": 103,
+    "PassengerId": 3,
+    "FlightClass": "FirstClass"
+  },
+  {
+    "BookingID": 1004,
+    "FlightId": 104,
+    "PassengerId": 4,
+    "FlightClass": "Business"
+  },
+  {
+    "BookingID": 1005,
+    "FlightId": 105,
+    "PassengerId": 5,
+    "FlightClass": "Economy"
+  },
+  {
+    "BookingID": 1006,
+    "FlightId": 106,
+    "PassengerId": 6,
+    "FlightClass": "FirstClass"
+  },
+  {
+    "BookingID": 1007,
+    "FlightId": 107,
+    "PassengerId": 7,
+    "FlightClass": "Economy"
+  },
+  {
+    "BookingID": 1008,
+    "FlightId": 108,
+    "PassengerId": 8,
+    "FlightClass": "Economy"
+  },
+  {
+    "BookingID": 1009,
+    "FlightId": 109,
+    "PassengerId": 9,
+    "FlightClass": "Business"
+  },
+  {
+    "BookingID": 1010,
+    "FlightId": 110,
+    "PassengerId": 10,
+    "FlightClass": "FirstClass"
+  },
+  {
+    "BookingID": 1011,
+    "FlightId": 111,
+    "PassengerId": 11,
+    "FlightClass": "Economy"
+  },
+  {
+    "BookingID": 1012,
+    "FlightId": 112,
+    "PassengerId": 12,
+    "FlightClass": "Business"
+  },
+  {
+    "BookingID": 1013,
+    "FlightId": 113,
+    "PassengerId": 13,
+    "FlightClass": "Economy"
+  },
+  {
+    "BookingID": 1014,
+    "FlightId": 114,
+    "PassengerId": 14,
+    "FlightClass": "FirstClass"
+  },
+  {
+    "BookingID": 1015,
+    "FlightId": 115,
+    "PassengerId": 15,
+    "FlightClass": "Business"
+  }
+]
